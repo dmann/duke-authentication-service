@@ -44,7 +44,10 @@ module DukeAuth
       end
       post '/revoke', root: false do
         $redis.del(params[:token])
+        logout_url = (request.base_url + "/Shibboleth.sso/Logout").gsub(/^http:/, 'https:')
+        #redirect("https://#{request.host}:#{request.port}/Shibboleth.sso/Logout")
         status 200
+        {logout_url: logout_url}
       end
     end
   end

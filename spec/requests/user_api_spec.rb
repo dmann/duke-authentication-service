@@ -68,11 +68,13 @@ describe DukeAuth::V1::UserAPI do
     subject { post url, payload.to_json, json_headers }
     let(:url) { "/api/v1/revoke/" }
     let(:payload) { {token: token} }
+    let(:https_base_url) { request.base_url.gsub(/^http:/, 'https:') }
+    let(:logout_url) { https_base_url + "/Shibboleth.sso/Logout" }
 
     context 'with existing token in payload' do
       before { is_expected.to eq 200 }
 
-      it { expect(response.body).to eq '200' }
+      it { expect(response.body).to eq({logout_url: logout_url}.to_json) }
       it { expect($redis.exists(token)).not_to be }
     end
 
@@ -80,7 +82,7 @@ describe DukeAuth::V1::UserAPI do
       before { is_expected.to eq 200 }
       let(:token) { 'doesnotexist' }
 
-      it { expect(response.body).to eq '200' }
+      it { expect(response.body).to eq({logout_url: logout_url}.to_json) }
       it { expect($redis.exists(token)).not_to be }
     end
 
