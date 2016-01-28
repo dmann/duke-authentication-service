@@ -72,8 +72,9 @@ shared_context 'with consumer redirect url' do
     token_type: 'Bearer',
     state: state,
     expires_in: token_ttl,
-    scope: Rails.application.config.default_scope
+    scope: scope
   } }
   let(:token_fragment) { token_params.to_query }
+  let(:tokenized_consumer_url) { consumer.redirect_uri+'#'+token_fragment }
   let(:expected_redirect_url) { consumer.redirect_uri+'#'+token_fragment }
 end

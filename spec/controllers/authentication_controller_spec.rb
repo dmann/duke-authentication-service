@@ -9,6 +9,7 @@ RSpec.describe AuthenticationController, type: :controller do
   let(:display_name) { Faker::Name.name }
   let(:email) { Faker::Internet.email }
   let(:response_type) { 'token' }
+  let(:scope) { Rails.application.config.default_scope }
   let(:state) { Faker::Lorem.characters(20) }
   let(:non_existent_client_id) { SecureRandom.uuid }
 
