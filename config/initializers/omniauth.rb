@@ -11,3 +11,4 @@ Rails.application.config.middleware.use OmniAuth::Builder do
     :request_type => :header
   }
 end
+OmniAuth.config.logger = Rails.logger
