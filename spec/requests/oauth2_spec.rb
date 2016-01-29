@@ -3,7 +3,7 @@ require 'rails_helper'
 OmniAuth.config.test_mode = true
 
 describe 'Duke OAuth2' do
-  let(:user) { FactoryGirl.create(:user) }
+  let!(:user) { FactoryGirl.create(:user) }
   let(:first_name) { Faker::Name.first_name }
   let(:last_name) { Faker::Name.last_name }
   let(:display_name) { Faker::Name.name }
@@ -31,6 +31,7 @@ describe 'Duke OAuth2' do
       }
     })
   }
+
   
   let(:request_params) { {
       client_id: consumer.uuid,
@@ -47,48 +48,36 @@ describe 'Duke OAuth2' do
       Rails.application.env_config["omniauth.auth"] = shib_mock
     end
 
-    context 'without parameters' do
-      let(:request_params) { {} }
-      before { is_expected.to eq 401 }
+    it_behaves_like 'an invalid request' do
+      include_context 'invalid authenticate request'
+    end
 
+    context 'without parameters' do
+      include_context 'invalid authenticate request'
       it { expect(response.body).to eq('invalid_request') }
     end
 
     context 'with invalid authentication' do
-      let(:shib_mock) { OmniAuth.config.mock_auth[:shibboleth] = :invalid }
-
-      it 'redirects to auth failure url' do
-        is_expected.to eq 302
-        expect(response).to redirect_to(login_url)
-        expect(follow_redirect!).to eq 302
-        expect(response).to redirect_to(auth_failure_url)
-      end
+      include_context 'failed authentication'
+      it { expect(response).to redirect_to(auth_failure_url) }
     end
 
     context 'when authenticated' do
+      include_context 'valid authenticate request'
+
       context 'with existing user' do
         include_context 'with consumer redirect url'
 
-        it 'redirects to consumer url' do
-          expect(user).to be_persisted
-          is_expected.to eq 302
-          expect(response).to redirect_to(login_url)
-          expect(follow_redirect!).to eq 302
-          expect(response).to redirect_to(tokenized_consumer_url)
-        end
+        it { expect(user).to be_persisted }
+        it { expect(response).to redirect_to(tokenized_consumer_url) }
       end
 
       context 'with new user' do
         let(:user) { FactoryGirl.build(:user) }
 
-        it 'redirects to consumer url' do
-          expect(user).not_to be_persisted
-          is_expected.to eq 302
-          expect(response).to redirect_to(login_url)
-          expect(follow_redirect!).to eq 302
-          expect(response).to redirect_to(authorize_url)
-          expect(follow_redirect!).to eq 200
-        end
+        it { expect(user).not_to be_persisted }
+        it { expect(response).to redirect_to(authorize_url) }
+        it { expect(follow_redirect!).to eq 200 }
       end
     end
   end
@@ -97,7 +86,25 @@ describe 'Duke OAuth2' do
     subject { get url }
     let(:url) { authorize_url }
 
-    it { is_expected.to eq 200 }
+    context 'without visiting #authenticate' do
+      it_behaves_like 'an invalid request'
+    end
+
+    it_behaves_like 'an invalid request' do
+      include_context 'invalid authenticate request'
+      before { is_expected.to eq 401 }
+    end
+
+    context 'with invalid authentication' do
+      include_context 'failed authentication'
+      before { is_expected.to eq 401 }
+      it_behaves_like 'an invalid request'
+    end
+
+    context 'successful authentication' do
+      include_context 'valid authenticate request'
+      it { is_expected.to eq 200 }
+    end
   end
 
   describe '#process_authorization' do
